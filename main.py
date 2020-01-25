@@ -58,6 +58,7 @@ def get_text_messages(message):
 if __name__ == '__main__':
     bot.polling(none_stop=True, interval=0, timeout=10)
 
+
 '''
 Создаем классы с ключем теста, или вызываем файлы по ключу который возьмем с кнопки.
 '''
