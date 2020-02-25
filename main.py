@@ -17,6 +17,15 @@ def handle_start(message):
     bot.send_message(message.from_user.id, "Здравствуйте", reply_markup=user_markup)
 
 
+# менюшка с предложением пройти тест
+@bot.message_handler(commands=["test"])
+def handle_all_test(message):
+    test_markup_choice = InlineKeyboardMarkup(row_width=2)
+    test_markup_choice.add(InlineKeyboardButton("Yes", callback_data="all_test_yes"),
+                           InlineKeyboardButton("No", callback_data="all_test_no"))
+    bot.send_message(message.chat.id, "Вы хотите пройти тест?", reply_markup=test_markup_choice)
+
+
 # если мы ответили что хотим пройти тест
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
@@ -29,15 +38,6 @@ def callback_query(call):
                               reply_markup=all_test_markup)
     elif call.data == "all_test_no":
         bot.answer_callback_query(call.id, "ВЫ НЕ ГОТОВЫ")
-
-
-# менюшка с предложением пройти тест
-@bot.message_handler(commands=["test"])
-def handle_all_test(message):
-    test_markup_choice = InlineKeyboardMarkup(row_width=2)
-    test_markup_choice.add(InlineKeyboardButton("Yes", callback_data="all_test_yes"),
-                           InlineKeyboardButton("No", callback_data="all_test_no"))
-    bot.send_message(message.chat.id, "Вы хотите пройти тест?", reply_markup=test_markup_choice)
 
 
 # наш DialogFlow
@@ -57,7 +57,6 @@ def get_text_messages(message):
 
 if __name__ == '__main__':
     bot.polling(none_stop=True, interval=0, timeout=10)
-
 
 '''
 Создаем классы с ключем теста, или вызываем файлы по ключу который возьмем с кнопки.
