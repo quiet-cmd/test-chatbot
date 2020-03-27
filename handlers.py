@@ -2,7 +2,7 @@ from main import bot, dp
 from aiogram.types import Message
 import apiai
 import json
-from config import TOKEN_DF, NAME_BOT, admin_id, database_name
+from config import TOKEN_DF, NAME_BOT, database_name
 from SQLighter import SQLighter
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
