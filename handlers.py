@@ -1,11 +1,10 @@
 from main import bot, dp
 from aiogram.types import Message
-from config import admin_id
 import apiai
 import json
-from config import TOKEN_DF, NAME_BOT, database_name
-from SQLighter import *
-from keyboards import ListOfButtons
+from config import TOKEN_DF, NAME_BOT, admin_id, database_name
+from SQLighter import SQLighter
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 
 async def send_to_admin(*args):
@@ -17,8 +16,17 @@ async def send_to_admin(*args):
 async def keyboards(message: Message):
     text = "Выберите тест"
     name = SQLighter(database_name).all_table_name()
-    keyboard = ListOfButtons(text=name, callback=list(range(len(name)))).inline_keyboard
+    keyboard = InlineKeyboardMarkup(text=name, callback=list(range(len(name))))
     await message.answer(text=text, reply_markup=keyboard)
+
+
+@dp.message_handler(commands='start')
+async def start_cmd_handler(message: Message):
+    keyboard_markup = InlineKeyboardMarkup(row_width=2)
+    text = SQLighter(database_name).all_table_name()
+    data = list(range(len(text)))
+    keyboard_markup.row(*(InlineKeyboardButton(text, callback_data=data) for text, data in zip(text, data)))
+    await message.reply("Выберите тест", reply_markup=keyboard_markup)
 
 
 # наш DialogFlow
