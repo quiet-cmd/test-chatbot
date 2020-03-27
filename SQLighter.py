@@ -16,17 +16,17 @@ class SQLighter:
     def select_all(self, table_name):
         """ Получаем все строки """
         with self.connection:
-            return self.cursor.execute('SELECT * FROM  {0}'.format(table_name)).fetchall()
+            return self.cursor.execute(f'SELECT * FROM  {table_name}').fetchall()
 
-    def select_single(self, table_name, rownum):
+    def select_one(self, table_name, rownum):
         """ Получаем одну строку с номером rownum """
         with self.connection:
-            return self.cursor.execute('SELECT * FROM {0} WHERE id = ?'.format(table_name), (rownum,)).fetchall()[0]
+            return self.cursor.execute(f'SELECT * FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
 
     def count_rows(self, table_name):
         """ Считаем количество строк """
         with self.connection:
-            result = self.cursor.execute('SELECT * FROM {0}'.format(table_name)).fetchall()
+            result = self.cursor.execute(f'SELECT * FROM {table_name}').fetchall()
             return len(result)
 
     def close(self):
