@@ -7,10 +7,6 @@ from SQLighter import SQLighter
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 
-async def send_to_admin(*args):
-    await bot.send_message(chat_id=admin_id, text="Фростморн жаждет крови!")
-
-
 # кнопки - название таблиц бд
 @dp.message_handler(commands='start')
 async def start_cmd_handler(message: Message):
