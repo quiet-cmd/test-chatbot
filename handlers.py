@@ -12,14 +12,6 @@ async def send_to_admin(*args):
 
 
 # кнопки - название таблиц бд
-@dp.message_handler(commands='test')
-async def keyboards(message: Message):
-    text = "Выберите тест"
-    name = SQLighter(database_name).all_table_name()
-    keyboard = InlineKeyboardMarkup(text=name, callback=list(range(len(name))))
-    await message.answer(text=text, reply_markup=keyboard)
-
-
 @dp.message_handler(commands='start')
 async def start_cmd_handler(message: Message):
     keyboard_markup = InlineKeyboardMarkup(row_width=2)
