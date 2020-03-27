@@ -10,4 +10,4 @@ dp = Dispatcher(bot, storage=storage, loop=loop)
 
 if __name__ == '__main__':
     from handlers import *
-    executor.start_polling(dp, on_startup=send_to_admin)
+    executor.start_polling(dp)
