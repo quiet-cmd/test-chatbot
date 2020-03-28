@@ -17,7 +17,7 @@ class SQLighter:
         with self.connection:
             return self.cursor.execute(f'SELECT * FROM  {table_name}').fetchall()
 
-    def select_answer(self, table_name, rownum):
+    def select_question(self, table_name, rownum):
         """ Получаем получаем вопрос с  номером rownum """
         with self.connection:
             return self.cursor.execute(f'SELECT answer FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
@@ -41,4 +41,3 @@ class SQLighter:
     def close(self):
         """ Закрываем текущее соединение с БД """
         self.connection.close()
-
