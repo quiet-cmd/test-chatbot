@@ -17,10 +17,20 @@ class SQLighter:
         with self.connection:
             return self.cursor.execute(f'SELECT * FROM  {table_name}').fetchall()
 
-    def select_one(self, table_name, rownum):
-        """ Получаем одну строку с номером rownum """
+    def select_answer(self, table_name, rownum):
+        """ Получаем получаем вопрос с  номером rownum """
         with self.connection:
-            return self.cursor.execute(f'SELECT * FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
+            return self.cursor.execute(f'SELECT answer FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
+
+    def select_right_answer(self, table_name, rownum):
+        """ Получаем правильый ответ  с номером rownum """
+        with self.connection:
+            return self.cursor.execute(f'SELECT right_answer FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
+
+    def select_wrong_answers(self, table_name, rownum):
+        """ Получаем неправильные ответы  с номером rownum """
+        with self.connection:
+            return self.cursor.execute(f'SELECT wrong_answers FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
 
     def count_rows(self, table_name):
         """ Считаем количество строк """
