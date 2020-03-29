@@ -39,5 +39,5 @@ class SQLighter:
             return len(result)
 
     def close(self):
-        """ Закрываем текущее соединение с БД """
+        """ Закрываем текущее соединение с БД  """
         self.connection.close()
