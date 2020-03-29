@@ -17,9 +17,9 @@ async def keyboards_start(message: Message):
 
 
 @dp.callback_query_handler(Button("Физкультура1"))
-async def с_btn1(call: CallbackQuery):
+async def keyboards_test(call: CallbackQuery):
     db_work = SQLighter(database_name)
-    table_name = "Физкультура1"
+    table_name = call.data
     for i in range(1, db_work.count_rows(table_name) + 1):
         right_answer = db_work.select_right_answer(table_name, i)[0]
         answers = str(db_work.select_wrong_answers(table_name, i)[0]).split(';')
