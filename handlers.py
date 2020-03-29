@@ -10,16 +10,18 @@ from filters import *
 # кнопки - название таблиц бд
 @dp.message_handler(commands='test')
 async def keyboards_start(message: Message):
-    text = SQLighter(database_name).all_table_name()
     data = SQLighter(database_name).all_table_name()
+    text = [i.replace('_', ' ') for i in data]
+    print(text)
     keyboard = ListOfButtons(text=text, callback=data).inline_keyboard
     await message.answer(text="Выберите тест", reply_markup=keyboard)
 
 
-@dp.callback_query_handler(Button("Физкультура1"))
+@dp.callback_query_handler(Button("Физкультура 1"))
 async def keyboards_test(call: CallbackQuery):
     db_work = SQLighter(database_name)
-    table_name = call.data
+    table_name = str(call.data).replace(' ', '_')
+    print(table_name)
     for i in range(1, db_work.count_rows(table_name) + 1):
         right_answer = db_work.select_right_answer(table_name, i)[0]
         answers = str(db_work.select_wrong_answers(table_name, i)[0]).split(';')
