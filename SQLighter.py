@@ -20,7 +20,7 @@ class SQLighter:
     def select_question(self, table_name, rownum):
         """ Получаем получаем вопрос с  номером rownum """
         with self.connection:
-            return self.cursor.execute(f'SELECT answer FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
+            return self.cursor.execute(f'SELECT question FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
 
     def select_right_answer(self, table_name, rownum):
         """ Получаем правильый ответ  с номером rownum """
