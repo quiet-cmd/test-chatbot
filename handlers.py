@@ -26,8 +26,7 @@ async def keyboards_test(call: CallbackQuery):
     for i in range(1, db_work.count_rows(table_name) + 1):
         keyboard = types.InlineKeyboardMarkup()
         right_answer = db_work.select_right_answer(table_name, i)[0]
-        wrong_answer = str(db_work.select_wrong_answers(table_name, i)[0])
-        answer = wrong_answer.split(';')
+        answer = str(db_work.select_wrong_answers(table_name, i)[0]).split(';')
         answer.append(right_answer)
         random.shuffle(answer)
         row_btn = (types.InlineKeyboardButton(text, callback_data=text) for text in answer)
