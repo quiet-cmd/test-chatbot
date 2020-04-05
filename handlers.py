@@ -13,12 +13,12 @@ async def start_cmd_handler(message: types.Message):
     keyboards_for_start = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btns_text = ('/test', '/')
     keyboards_for_start.row(*(types.KeyboardButton(text) for text in btns_text))
-    await message.reply("Фростморн даждет тестов", reply_markup=keyboards_for_start)
+    await message.reply("Фростморн жаждет тестов", reply_markup=keyboards_for_start)
 
 
 # кнопки - название таблиц бд
 @dp.message_handler(commands='test')
-async def keyboards_test(message: Message):
+async def keyboards_test_name(message: Message):
     keyboard_test_name = types.InlineKeyboardMarkup()
     data = SQLighter(database_name).all_table_name()
     text = [i.replace('_', ' ') for i in data]
