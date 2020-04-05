@@ -9,11 +9,11 @@ import apiai
 
 
 @dp.message_handler(commands='start')
-async def start_cmd_handler(message: types.Message):
+async def start(message: types.Message):
     keyboards_for_start = types.ReplyKeyboardMarkup(resize_keyboard=True)
     btns_text = ('/test', '/')
     keyboards_for_start.row(*(types.KeyboardButton(text) for text in btns_text))
-    await message.reply("Фростморн жаждет тестов", reply_markup=keyboards_for_start)
+    await message.answer("Фростморн жаждет тестов", reply_markup=keyboards_for_start)
 
 
 @dp.message_handler(commands='test')
@@ -50,4 +50,7 @@ async def echo(message: Message):
     request.query = message.text
     response_json = json.loads(request.getresponse().read().decode("utf-8"))
     response = response_json["result"]["fulfillment"]["speech"]
-    await message.answer(text=response)
+    if response:
+        await message.answer(text=response)
+    else:
+        await message.answer('Я вас не понимаю')
