@@ -23,7 +23,7 @@ async def start(message: types.Message):
 
 
 @dp.message_handler(commands='test')
-async def keyboards_test_name(message: Message):
+async def test_name(message: Message):
     keyboard_test_name = types.InlineKeyboardMarkup()
     data = SQLighter(database_name).all_table_name()
     text = [i.replace('_', ' ') for i in data]
@@ -34,7 +34,7 @@ async def keyboards_test_name(message: Message):
 
 
 @dp.callback_query_handler(text=["Физкультура_1", "Физкультура_2"])
-async def keyboards_test(call: CallbackQuery):
+async def user_testing(call: CallbackQuery):
     db_work = SQLighter(database_name)
     table_name = str(call.data)
     for i in range(1, db_work.count_rows(table_name) + 1):
@@ -49,7 +49,7 @@ async def keyboards_test(call: CallbackQuery):
 
 
 @dp.message_handler()
-async def echo(message: Message):
+async def message_reply(message: Message):
     request = apiai.ApiAI(TOKEN_DF).text_request()
     request.lang = "ru"
     request.session_id = NAME_BOT
