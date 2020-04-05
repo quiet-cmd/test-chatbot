@@ -1,15 +1,24 @@
-from main import bot, dp, types
-import apiai
-import json
+from main import bot, dp
 from config import TOKEN_DF, NAME_BOT, database_name
 from SQLighter import SQLighter
-import random
+from aiogram import types
 from aiogram.types import Message, CallbackQuery
+import random
+import json
+import apiai
+
+
+@dp.message_handler(commands='start')
+async def start_cmd_handler(message: types.Message):
+    keyboards_for_start = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    btns_text = ('/test', '/')
+    keyboards_for_start.row(*(types.KeyboardButton(text) for text in btns_text))
+    await message.reply("Фростморн даждет тестов", reply_markup=keyboards_for_start)
 
 
 # кнопки - название таблиц бд
 @dp.message_handler(commands='test')
-async def keyboards_start(message: Message):
+async def keyboards_test(message: Message):
     keyboard_test_name = types.InlineKeyboardMarkup()
     data = SQLighter(database_name).all_table_name()
     text = [i.replace('_', ' ') for i in data]
@@ -31,7 +40,7 @@ async def keyboards_test(call: CallbackQuery):
         random.shuffle(answer)
         row_btn = (types.InlineKeyboardButton(text, callback_data=text) for text in answer)
         keyboard.row(*row_btn)
-        await call.message.answer(text=str(db_work.select_question(table_name, i)[0]), reply_markup=keyboard)
+        await call.message.edit_text(text=str(db_work.select_question(table_name, i)[0]), reply_markup=keyboard)
 
 
 # наш DialogFlow
