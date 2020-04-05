@@ -16,7 +16,6 @@ async def start_cmd_handler(message: types.Message):
     await message.reply("Фростморн жаждет тестов", reply_markup=keyboards_for_start)
 
 
-# кнопки - название таблиц бд
 @dp.message_handler(commands='test')
 async def keyboards_test_name(message: Message):
     keyboard_test_name = types.InlineKeyboardMarkup()
@@ -43,7 +42,6 @@ async def keyboards_test(call: CallbackQuery):
         await call.message.edit_text(text=str(db_work.select_question(table_name, i)[0]), reply_markup=keyboard)
 
 
-# наш DialogFlow
 @dp.message_handler()
 async def echo(message: Message):
     request = apiai.ApiAI(TOKEN_DF).text_request()
