@@ -1,5 +1,5 @@
 import asyncio
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, executor, types, md
 from aiogram.types import Message, CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from config import TOKEN_DF, NAME_BOT, database_name, TOKEN_TG
@@ -11,7 +11,6 @@ import apiai
 import logging
 import uuid
 
-from aiogram import Bot, Dispatcher, executor, md, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.utils.callback_data import CallbackData
 from aiogram.utils.exceptions import MessageNotModified, Throttled
@@ -38,22 +37,16 @@ async def test_name(message: Message):
     data = SQLighter(database_name).all_table_name()
     text = [i.replace('_', ' ') for i in data]
     text_and_data = zip(text, data)
-    row_btn = (types.InlineKeyboardButton(text, callback_data=posts_cb.new(data=data, action='list')) for text, data in
+    row_btn = (types.InlineKeyboardButton(text, callback_data=posts_cb.new(data=data, action='test')) for text, data in
                text_and_data)
     keyboard_test_name.row(*row_btn)
     await message.answer(text="Выберите тест", reply_markup=keyboard_test_name)
 
 
-@dp.callback_query_handler(posts_cb.filter(action=['list']))
+@dp.callback_query_handler(posts_cb.filter(action=['test']))
 async def query_show_list(query: types.CallbackQuery, callback_data: dict):
     db_work = SQLighter(database_name)
     table_name = callback_data['data']
-    index = 1
-    right_answer = db_work.select_right_answer(table_name, index)
-
-    answer = db_work.select_wrong_answers(table_name, index).split(';')
-    answer.append(right_answer)
-    random.shuffle(answer)
 
     POSTS = {
         str(uuid.uuid4()): {
@@ -62,21 +55,15 @@ async def query_show_list(query: types.CallbackQuery, callback_data: dict):
                 md.quote_html(db_work.select_question(table_name, index)),
                 '',
                 sep='\n', ),
-            'right_answer': right_answer,
-            'wrong_answer': answer
-        }
+            'right_answer': db_work.select_right_answer(table_name, index),
+            'wrong_answer': db_work.select_wrong_answers(table_name, index).split(';'),
+            'test_name': callback_data['data']
+        } for index in range(1, db_work.count_rows(table_name) + 1)
     }
 
     print(POSTS)
     for post_id, post in POSTS.items():
-        print(post_id)
-        print(POSTS[post_id]['question'])
-
-    markup = types.InlineKeyboardMarkup()
-    btn = (types.InlineKeyboardButton(text=text, callback_data=posts_cb.new(data=text, action='answer')) for text in
-           answer)
-    markup.row(*btn)
-    await query.message.edit_text('some text', reply_markup=markup)
+        print(POSTS[post_id]['question'], POSTS[post_id]['wrong_answer'])
 
 
 @dp.callback_query_handler(posts_cb.filter(action=['answer']))
