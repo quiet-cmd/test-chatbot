@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher, executor, types, md
 from aiogram.types import Message, CallbackQuery
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils.callback_data import CallbackData
-from config import TOKEN_DF, NAME_BOT, database_name, TOKEN_TG
+from config import TOKEN_DF, NAME_BOT, database_name, TOKEN_TG, storage_name
 from SQLighter import SQLighter
 import random
 import json
@@ -15,6 +15,7 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage, loop=loop)
 
 test_cb = CallbackData('post', 'data', 'action', 'index')
+answer_cb = CallbackData('post', 'post_id', 'test_name', 'answer', 'question_number', 'action')
 
 
 @dp.message_handler(commands='start')
@@ -41,6 +42,7 @@ async def test_name(message: Message):
 @dp.callback_query_handler(test_cb.filter(action=['test', 'step+', 'step-']))
 async def testing_users(query: types.CallbackQuery, callback_data: dict):
     index = int(callback_data['index'])
+    post_id = query.message.message_id
     db_work = SQLighter(database_name)
     table_name = callback_data['data']
 
@@ -69,12 +71,8 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
     random.shuffle(answer)
 
     markup = types.InlineKeyboardMarkup()
-    row_btn = (types.InlineKeyboardButton(text=text, callback_data=test_cb.new(data=text, action='answer', index=index))
-               for
-               text in
-               answer)
+    row_btn = (types.InlineKeyboardButton(text=text, callback_data=answer_cb.new(post_id=post_id, test_name=table_name, answer=text, question_number=index, action='answer')) for text in answer)
     markup.row(*row_btn)
-
     markup.add(
         types.InlineKeyboardButton('Следующий',
                                    callback_data=test_cb.new(data=table_name, action='step+', index=index)),
@@ -84,10 +82,12 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
     await query.message.edit_text(text=text, reply_markup=markup)
 
 
-@dp.callback_query_handler(test_cb.filter(action=['answer']))
+@dp.callback_query_handler(answer_cb.filter(action=['answer']))
 async def testing_users(query: types.CallbackQuery, callback_data: dict):
-    print(callback_data)
-    await query.answer(text=f'Вы выбрали ответ {callback_data["data"]}')
+    s = tuple([value for key, value in callback_data.items()][1:5])
+    print(callback_data, s)
+    SQLighter(storage_name).insert_row(s)
+    await query.answer(text=f'Вы выбрали ответ {callback_data["answer"]}')
 
 
 @dp.message_handler()
