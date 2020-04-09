@@ -16,16 +16,6 @@ dp = Dispatcher(bot, storage=storage, loop=loop)
 
 test_cb = CallbackData('post', 'data', 'action', 'index')
 
-user_answers = dict()
-
-
-def result(db_work, table_name):
-    number_of_correct_answers = 0
-    for key in range(1, db_work.count_rows(table_name) + 1):
-        if user_answers.get(key) == db_work.select_right_answer(table_name, key):
-            number_of_correct_answers += 1
-    return number_of_correct_answers
-
 
 @dp.message_handler(commands='start')
 async def start(message: types.Message):
@@ -37,7 +27,6 @@ async def start(message: types.Message):
 
 @dp.message_handler(commands='test')
 async def test_name(message: Message):
-    user_answers.clear()
     keyboard_test_name = types.InlineKeyboardMarkup()
     data = SQLighter(database_name).all_table_name()
     text = [i.replace('_', ' ') for i in data]
@@ -59,8 +48,7 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
         if index < db_work.count_rows(table_name):
             index += 1
         else:
-            await query.answer(text=f'Правильных ответ дано {result(db_work, table_name)}')
-
+            await query.answer(text=f'Тут будет результат')
     if callback_data['action'] == 'step-':
         if index > 1:
             index -= 1
@@ -99,8 +87,6 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
 @dp.callback_query_handler(test_cb.filter(action=['answer']))
 async def testing_users(query: types.CallbackQuery, callback_data: dict):
     print(callback_data)
-    user_answers[callback_data['index']] = callback_data['data']
-    print(user_answers)
     await query.answer(text=f'Вы выбрали ответ {callback_data["data"]}')
 
 
