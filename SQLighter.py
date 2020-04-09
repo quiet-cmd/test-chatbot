@@ -32,7 +32,8 @@ class SQLighter:
     def select_wrong_answers(self, table_name, rownum):
         """ Получаем неправильные ответы  с номером rownum """
         with self.connection:
-            result = self.cursor.execute(f'SELECT wrong_answers FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[0]
+            result = self.cursor.execute(f'SELECT wrong_answers FROM {table_name} WHERE id = ?', (rownum,)).fetchall()[
+                0]
             return result[0]
 
     def count_rows(self, table_name):
@@ -44,3 +45,9 @@ class SQLighter:
     def close(self):
         """ Закрываем текущее соединение с БД  """
         self.connection.close()
+
+    def insert_row(self, record_list):
+        """ Записываем строку в БД-хранилище  """
+        with self.connection:
+            self.cursor.execute(
+                f"INSERT INTO all_answers (id, test_name, answer, question_number)  VALUES {record_list};")
