@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Bot, Dispatcher, executor, types, md
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils.callback_data import CallbackData
 from config import TOKEN_DF, NAME_BOT, database_name, TOKEN_TG, storage_name
@@ -15,7 +15,8 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage, loop=loop)
 
 test_cb = CallbackData('post', 'data', 'action', 'index')
-answer_cb = CallbackData('post', 'post_id', 'test_name', 'answer', 'question_number', 'action')
+answer_cb = CallbackData('post', 'post_id', 'answer', 'right_or_wrong', 'question_number', 'action')
+result_cb = CallbackData('post', 'table_name', 'action', 'number_of_questions')
 
 
 @dp.message_handler(commands='start')
@@ -46,11 +47,13 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
     db_work = SQLighter(database_name)
     table_name = callback_data['data']
 
+    number_of_questions = db_work.count_rows(table_name)
+
     if callback_data['action'] == 'step+':
-        if index < db_work.count_rows(table_name):
+        if index < number_of_questions:
             index += 1
         else:
-            await query.answer(text=f'Тут будет результат')
+            await query.answer(text=f'Нажмите кнопку "Показать результат"')
     if callback_data['action'] == 'step-':
         if index > 1:
             index -= 1
@@ -69,25 +72,41 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
     answer = db_work.select_wrong_answers(table_name, index).split(';')
     answer.append(right_answer)
     random.shuffle(answer)
-
+    answer_for_btn = {i: 1 if i == right_answer else 0 for i in answer}
     markup = types.InlineKeyboardMarkup()
-    row_btn = (types.InlineKeyboardButton(text=text, callback_data=answer_cb.new(post_id=post_id, test_name=table_name, answer=text, question_number=index, action='answer')) for text in answer)
+    row_btn = (types.InlineKeyboardButton(text=text,
+                                          callback_data=answer_cb.new(post_id=post_id, answer=text, right_or_wrong=data,
+                                                                      question_number=index, action='answer')) for
+               text, data in answer_for_btn.items())
     markup.row(*row_btn)
     markup.add(
         types.InlineKeyboardButton('Следующий',
                                    callback_data=test_cb.new(data=table_name, action='step+', index=index)),
         types.InlineKeyboardButton('предыдущий',
                                    callback_data=test_cb.new(data=table_name, action='step-', index=index)))
-
+    markup.add(
+        types.InlineKeyboardButton('Показать результат',
+                                   callback_data=result_cb.new(table_name=table_name, action='result',
+                                                               number_of_questions=number_of_questions)))
     await query.message.edit_text(text=text, reply_markup=markup)
 
 
 @dp.callback_query_handler(answer_cb.filter(action=['answer']))
 async def testing_users(query: types.CallbackQuery, callback_data: dict):
-    s = tuple([value for key, value in callback_data.items()][1:5])
-    print(callback_data, s)
-    SQLighter(storage_name).insert_row(s)
+    print(callback_data)
+    SQLighter(storage_name).insert_row(callback_data['post_id'], callback_data['right_or_wrong'],
+                                       callback_data['question_number'])
     await query.answer(text=f'Вы выбрали ответ {callback_data["answer"]}')
+
+
+@dp.callback_query_handler(result_cb.filter(action=['result']))
+async def result_test(query: types.CallbackQuery, callback_data: dict):
+    db_work = SQLighter(storage_name)
+    num_of_right_answer = db_work.number_of_correct_answers(query.message.message_id)
+    db_work.delete_rows(query.message.message_id)
+
+    await query.message.edit_text(
+        text=f'Поздравляю вы прошли тест.! Правильных ответов: {num_of_right_answer} из {callback_data["number_of_questions"]}')
 
 
 @dp.message_handler()
