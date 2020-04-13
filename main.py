@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher, executor, types, md
 from aiogram.types import Message
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils.callback_data import CallbackData
-from config import TOKEN_DF, NAME_BOT, database_name, TOKEN_TG, storage_name
+from config import TOKEN_DF, NAME_BOT, DATABASE_NAME, TOKEN_TG, STORAGE_NAME
 from SQLighter import SQLighter
 import random
 import json
@@ -30,7 +30,7 @@ async def start(message: types.Message):
 @dp.message_handler(commands='test')
 async def test_name(message: Message):
     keyboard_test_name = types.InlineKeyboardMarkup()
-    data = SQLighter(database_name).all_table_name()
+    data = SQLighter(DATABASE_NAME).all_table_name()
     text = [i.replace('_', ' ') for i in data]
     text_and_data = zip(text, data)
     row_btn = (types.InlineKeyboardButton(text, callback_data=test_cb.new(data=data, action='test', index=1)) for
@@ -44,7 +44,7 @@ async def test_name(message: Message):
 async def testing_users(query: types.CallbackQuery, callback_data: dict):
     index = int(callback_data['index'])
     post_id = query.message.message_id
-    db_work = SQLighter(database_name)
+    db_work = SQLighter(DATABASE_NAME)
     table_name = callback_data['data']
 
     number_of_questions = db_work.count_rows(table_name)
@@ -94,14 +94,14 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
 @dp.callback_query_handler(answer_cb.filter(action=['answer']))
 async def testing_users(query: types.CallbackQuery, callback_data: dict):
     print(callback_data)
-    SQLighter(storage_name).insert_row(callback_data['post_id'], callback_data['right_or_wrong'],
+    SQLighter(STORAGE_NAME).insert_row(callback_data['post_id'], callback_data['right_or_wrong'],
                                        callback_data['question_number'])
     await query.answer(text=f'Вы выбрали ответ {callback_data["answer"]}')
 
 
 @dp.callback_query_handler(result_cb.filter(action=['result']))
 async def result_test(query: types.CallbackQuery, callback_data: dict):
-    db_work = SQLighter(storage_name)
+    db_work = SQLighter(STORAGE_NAME)
     num_of_right_answer = db_work.number_of_correct_answers(query.message.message_id)
     db_work.delete_rows(query.message.message_id)
 
