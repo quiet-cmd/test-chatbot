@@ -22,9 +22,16 @@ result_cb = CallbackData('post', 'table_name', 'action', 'number_of_questions')
 @dp.message_handler(commands='start')
 async def start(message: types.Message):
     keyboards_for_start = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    btns_text = ('/test', '/HELP_ME')
+    btns_text = ('/test', '/help')
     keyboards_for_start.row(*(types.KeyboardButton(text) for text in btns_text))
     await message.answer("Фростморн жаждет тестов", reply_markup=keyboards_for_start)
+
+
+@dp.message_handler(commands='help')
+async def help(message: types.Message):
+    s = f'{NAME_BOT} - бот предназначенный для общения и тестирования. Предоставляет справочные материалы на основе \
+    неверных ответов пользователя.\nИмеющиеся команды:\n/test - вызов теста'
+    await message.answer(s)
 
 
 @dp.message_handler(commands='test')
@@ -93,7 +100,6 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
 
 @dp.callback_query_handler(answer_cb.filter(action=['answer']))
 async def testing_users(query: types.CallbackQuery, callback_data: dict):
-    print(callback_data)
     SQLighter(STORAGE_NAME).insert_row(callback_data['post_id'], callback_data['right_or_wrong'],
                                        callback_data['question_number'])
     await query.answer(text=f'Вы выбрали ответ {callback_data["answer"]}')
@@ -102,11 +108,29 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
 @dp.callback_query_handler(result_cb.filter(action=['result']))
 async def result_test(query: types.CallbackQuery, callback_data: dict):
     db_work = SQLighter(STORAGE_NAME)
-    num_of_right_answer = db_work.number_of_correct_answers(query.message.message_id)
+    post_id = query.message.message_id
+    num_of_right_answer = db_work.number_of_correct_answers(post_id)
+    all_wrong_answers_id = SQLighter(STORAGE_NAME).all_wrong_answers(post_id)
+    advice = SQLighter(DATABASE_NAME).select_advice(callback_data['table_name'], all_wrong_answers_id)
     db_work.delete_rows(query.message.message_id)
-
-    await query.message.edit_text(
-        text=f'Поздравляю вы прошли тест.! Правильных ответов: {num_of_right_answer} из {callback_data["number_of_questions"]}')
+    number_of_questions = callback_data["number_of_questions"]
+    if str(advice) == '()':
+        text = md.text(
+            md.hbold(f'Поздравляю вы прошли тест! Правильных ответов: {num_of_right_answer} из {number_of_questions}'),
+            '',
+            md.quote_html('Все ваши ответы были праавильными, мы открываем книгу секретов лишь нуждающимся'),
+            sep='\n'
+        )
+    else:
+        text = md.text(
+            md.hbold(f'Поздравляю вы прошли тест! Правильных ответов: {num_of_right_answer} из {number_of_questions}'),
+            '',
+            md.quote_html('Возможно вам стоит посмотреть следующие материалы:'),
+            '',
+            md.hitalic(*advice, sep='\n'),
+            sep='\n'
+        )
+    await query.message.edit_text(text=text, disable_web_page_preview=True)
 
 
 @dp.message_handler()

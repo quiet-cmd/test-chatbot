@@ -1,5 +1,6 @@
-TOKEN_TG = "1085803323:AAGRcv4pucf5RKOWRAjx_WgWHwWTRvjnvHA"
-TOKEN_DF = 'e00a8a8da64f4c54a46764b39c5e00b3'
-NAME_BOT = "HermeusMoraBot"
+import os
+TOKEN_TG = str(os.environ.get('telegram_token'))
+TOKEN_DF = str(os.environ.get('dialogflow_token'))
+NAME_BOT = str(os.environ.get('bot_name'))
 DATABASE_NAME = 'tests.db'
 STORAGE_NAME = 'storage.db'
