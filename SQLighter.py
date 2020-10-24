@@ -85,3 +85,8 @@ class SQLighter:
         """Удаляет все строки с id равным num"""
         with self.connection:
             self.cursor.execute(f"DELETE FROM all_answers WHERE id = {num}")
+
+    def delete_all_rows(self, table_name):
+        """Удаляет все строки из table_name"""
+        with self.connection:
+            self.cursor.execute(f"DELETE FROM {table_name}")
