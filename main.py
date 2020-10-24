@@ -36,13 +36,13 @@ async def help(message: types.Message):
 
 
 @dp.message_handler(commands='test')
-async def test_name(message: Message):
+async def test_genre(message: Message):
     keyboard_test_name = types.InlineKeyboardMarkup()
     text = [str(i[-1]) for i in SQLighter(DATABASE_NAME).select_all("Жанры")]
     row_btn = (types.InlineKeyboardButton(text, callback_data=test_genres_cb.new(category=text, action='genres')) for
                text in text)
     keyboard_test_name.row(*row_btn)
-    await message.answer(text="Выберите тест", reply_markup=keyboard_test_name)
+    await message.answer(text="Выберите категорию", reply_markup=keyboard_test_name)
 
 
 @dp.callback_query_handler(test_genres_cb.filter(action='genres'))
