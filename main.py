@@ -15,7 +15,6 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage, loop=loop)
 
 test_genres_cb = CallbackData('post', 'category', 'action')
-test_name_cb = CallbackData('post', 'data', 'action')
 test_cb = CallbackData('post', 'data', 'action', 'index')
 answer_cb = CallbackData('post', 'post_id', 'answer', 'right_or_wrong', 'question_number', 'action')
 result_cb = CallbackData('post', 'table_name', 'action', 'number_of_questions')
