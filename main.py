@@ -14,6 +14,8 @@ bot = Bot(TOKEN_TG, parse_mode='HTML')
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage, loop=loop)
 
+test_genres_cb = CallbackData('post', 'category', 'action')
+test_name_cb = CallbackData('post', 'data', 'action')
 test_cb = CallbackData('post', 'data', 'action', 'index')
 answer_cb = CallbackData('post', 'post_id', 'answer', 'right_or_wrong', 'question_number', 'action')
 result_cb = CallbackData('post', 'table_name', 'action', 'number_of_questions')
@@ -32,6 +34,29 @@ async def help(message: types.Message):
     s = f'{NAME_BOT} - бот предназначенный для общения и тестирования. Предоставляет справочные материалы на основе \
     неверных ответов пользователя.\nИмеющиеся команды:\n/test - вызов теста'
     await message.answer(s)
+
+
+@dp.message_handler(commands='test')
+async def test_name(message: Message):
+    keyboard_test_name = types.InlineKeyboardMarkup()
+    text = [str(i[-1]) for i in SQLighter(DATABASE_NAME).select_all("Жанры")]
+    row_btn = (types.InlineKeyboardButton(text, callback_data=test_genres_cb.new(category=text, action='genres')) for
+               text in text)
+    keyboard_test_name.row(*row_btn)
+    await message.answer(text="Выберите тест", reply_markup=keyboard_test_name)
+
+
+@dp.callback_query_handler(test_genres_cb.filter(action='genres'))
+async def test_name(query: types.CallbackQuery, callback_data: dict):
+    keyboard_test_name = types.InlineKeyboardMarkup()
+    genre = callback_data['category']
+    data = [table_name for table_name in SQLighter(DATABASE_NAME).all_table_name() if table_name.find(genre) != -1]
+    text = [' '.join(i.split('_')[:-1]) for i in data]
+    text_and_data = zip(text, data)
+    row_btn = (types.InlineKeyboardButton(text, callback_data=test_cb.new(data=data, action='test', index=1)) for
+               text, data in text_and_data)
+    keyboard_test_name.row(*row_btn)
+    await query.message.edit_text(text="Выберите тест", reply_markup=keyboard_test_name)
 
 
 @dp.message_handler(commands='test')
@@ -87,10 +112,10 @@ async def testing_users(query: types.CallbackQuery, callback_data: dict):
                text, data in answer_for_btn.items())
     markup.row(*row_btn)
     markup.add(
-        types.InlineKeyboardButton('Следующий',
-                                   callback_data=test_cb.new(data=table_name, action='step+', index=index)),
         types.InlineKeyboardButton('предыдущий',
-                                   callback_data=test_cb.new(data=table_name, action='step-', index=index)))
+                                   callback_data=test_cb.new(data=table_name, action='step-', index=index)),
+        types.InlineKeyboardButton('Следующий',
+                                   callback_data=test_cb.new(data=table_name, action='step+', index=index)))
     markup.add(
         types.InlineKeyboardButton('Показать результат',
                                    callback_data=result_cb.new(table_name=table_name, action='result',
@@ -118,7 +143,7 @@ async def result_test(query: types.CallbackQuery, callback_data: dict):
         text = md.text(
             md.hbold(f'Поздравляю вы прошли тест! Правильных ответов: {num_of_right_answer} из {number_of_questions}'),
             '',
-            md.quote_html('Все ваши ответы были праавильными, мы открываем книгу секретов лишь нуждающимся'),
+            md.quote_html('Все ваши ответы были правильными, мы открываем книгу секретов лишь нуждающимся'),
             sep='\n'
         )
     else:
@@ -148,4 +173,5 @@ async def message_reply(message: Message):
 
 
 if __name__ == '__main__':
+    SQLighter(STORAGE_NAME).delete_all_rows("all_answers")
     executor.start_polling(dp)
