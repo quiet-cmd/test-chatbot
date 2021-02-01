@@ -3,21 +3,21 @@ from aiogram import Bot, Dispatcher, executor, types, md
 from aiogram.types import Message
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.utils.callback_data import CallbackData
-from config import TOKEN_DF, NAME_BOT, DATABASE_NAME, TOKEN_TG, STORAGE_NAME
-from SQLighter import SQLighter
+from config import TOKEN_DF, NAME_BOT, TOKEN_TG
+from storage import sql_data
 import random
-import json
 import apiai
+import json
 
 loop = asyncio.get_event_loop()
 bot = Bot(TOKEN_TG, parse_mode='HTML')
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage, loop=loop)
 
-test_genres_cb = CallbackData('post', 'category', 'action')
-test_cb = CallbackData('post', 'data', 'action', 'index')
-answer_cb = CallbackData('post', 'post_id', 'answer', 'right_or_wrong', 'question_number', 'action')
-result_cb = CallbackData('post', 'table_name', 'action', 'number_of_questions')
+genre_selection_cb = CallbackData('post', 'genre', 'action')
+user_testing_cb = CallbackData('post', 'test_name', 'genre', 'index', 'action')
+answer_cb = CallbackData('post', 'message_id', 'answer', 'right_or_wrong', 'index', 'action')
+result_cb = CallbackData('post', 'test_name', 'genre', 'message_id', 'action')
 
 
 @dp.message_handler(commands='start')
@@ -36,109 +36,111 @@ async def help(message: types.Message):
 
 
 @dp.message_handler(commands='test')
-async def test_genre(message: Message):
-    keyboard_test_name = types.InlineKeyboardMarkup()
-    text = [str(i[-1]) for i in SQLighter(DATABASE_NAME).select_all("Жанры")]
-    row_btn = (types.InlineKeyboardButton(text, callback_data=test_genres_cb.new(category=text, action='genres')) for
-               text in text)
-    keyboard_test_name.row(*row_btn)
-    await message.answer(text="Выберите категорию", reply_markup=keyboard_test_name)
+async def genre_selection(message: Message):
+    keyboard_genres_name = types.InlineKeyboardMarkup()
+    genres = sql_data.keys()
+
+    for genre in genres:
+        btn = types.InlineKeyboardButton(genre, callback_data=genre_selection_cb.new(genre, 'genres'))
+        keyboard_genres_name.row(btn)
+
+    await message.answer("Выберите тест", reply_markup=keyboard_genres_name)
 
 
-@dp.callback_query_handler(test_genres_cb.filter(action='genres'))
-async def test_name(query: types.CallbackQuery, callback_data: dict):
-    keyboard_test_name = types.InlineKeyboardMarkup()
-    genre = callback_data['category']
-    data = [table_name for table_name in SQLighter(DATABASE_NAME).all_table_name() if table_name.find(genre) != -1]
-    text = [' '.join(i.split('_')[:-1]) for i in data]
-    text_and_data = zip(text, data)
-    row_btn = (types.InlineKeyboardButton(text, callback_data=test_cb.new(data=data, action='test', index=1)) for
-               text, data in text_and_data)
-    keyboard_test_name.row(*row_btn)
-    await query.message.edit_text(text="Выберите тест", reply_markup=keyboard_test_name)
+@dp.callback_query_handler(genre_selection_cb.filter(action='genres'))
+async def test_selection(query: types.CallbackQuery, callback_data: dict):
+    keyboard_tests_name = types.InlineKeyboardMarkup()
+    genre = callback_data['genre']
+    tests_name = sql_data[genre].keys()
+
+    for test_name in tests_name:
+        btn = types.InlineKeyboardButton(test_name, callback_data=user_testing_cb.new(test_name, genre, '0', 'test'))
+        keyboard_tests_name.row(btn)
+
+    await query.message.edit_text(text="Выберите тест", reply_markup=keyboard_tests_name)
 
 
-@dp.message_handler(commands='test')
-async def test_name(message: Message):
-    keyboard_test_name = types.InlineKeyboardMarkup()
-    data = SQLighter(DATABASE_NAME).all_table_name()
-    text = [i.replace('_', ' ') for i in data]
-    text_and_data = zip(text, data)
-    row_btn = (types.InlineKeyboardButton(text, callback_data=test_cb.new(data=data, action='test', index=1)) for
-               text, data in
-               text_and_data)
-    keyboard_test_name.row(*row_btn)
-    await message.answer(text="Выберите тест", reply_markup=keyboard_test_name)
-
-
-@dp.callback_query_handler(test_cb.filter(action=['test', 'step+', 'step-']))
-async def testing_users(query: types.CallbackQuery, callback_data: dict):
+@dp.callback_query_handler(user_testing_cb.filter(action=['test', 'step+', 'step-']))
+async def user_testing(query: types.CallbackQuery, callback_data: dict):
+    genre = callback_data['genre']
+    test_name = callback_data['test_name']
+    test_data = sql_data[genre][test_name]
     index = int(callback_data['index'])
-    post_id = query.message.message_id
-    db_work = SQLighter(DATABASE_NAME)
-    table_name = callback_data['data']
-
-    number_of_questions = db_work.count_rows(table_name)
+    message_id = str(query.message.message_id)
 
     if callback_data['action'] == 'step+':
-        if index < number_of_questions:
+        if index < len(test_data) - 1:
             index += 1
         else:
-            await query.answer(text=f'Нажмите кнопку "Показать результат"')
+            await query.answer('Нажмите кнопку "Показать результат"')
     if callback_data['action'] == 'step-':
-        if index > 1:
+        if index > 0:
             index -= 1
         else:
-            await query.answer(text='У нас нет нулевого вопроса')
-            index += 1
+            await query.answer('У нас нет нулевого вопроса')
 
     text = md.text(
-        md.hbold(f'Вопрос {index} из {db_work.count_rows(table_name)}'),
-        md.quote_html(db_work.select_question(table_name, index)),
-        '',
+        md.hbold(f"Вопрос {test_data[index]['id']} из {test_data[-1]['id']}"),
+        md.quote_html(test_data[index]['question']),
         sep='\n')
 
-    right_answer = db_work.select_right_answer(table_name, index)
+    correct_answer = test_data[index]['correct_answer']
 
-    answer = db_work.select_wrong_answers(table_name, index).split(';')
-    answer.append(right_answer)
+    answer = test_data[index]['wrong_answers'].split(';')
+    answer.append(correct_answer)
     random.shuffle(answer)
-    answer_for_btn = {i: 1 if i == right_answer else 0 for i in answer}
+    answer_for_btn = {i: 1 if i == correct_answer else 0 for i in answer}
+
     markup = types.InlineKeyboardMarkup()
-    row_btn = (types.InlineKeyboardButton(text=text,
-                                          callback_data=answer_cb.new(post_id=post_id, answer=text, right_or_wrong=data,
-                                                                      question_number=index, action='answer')) for
+
+    row_btn = (types.InlineKeyboardButton(text,
+                                          callback_data=answer_cb.new(message_id, text, data, str(index), 'answer')) for
                text, data in answer_for_btn.items())
     markup.row(*row_btn)
+
     markup.add(
-        types.InlineKeyboardButton('предыдущий',
-                                   callback_data=test_cb.new(data=table_name, action='step-', index=index)),
-        types.InlineKeyboardButton('Следующий',
-                                   callback_data=test_cb.new(data=table_name, action='step+', index=index)))
+        types.InlineKeyboardButton('предыдущий', callback_data=user_testing_cb.new(test_name, genre, index, 'step-')),
+        types.InlineKeyboardButton('Следующий', callback_data=user_testing_cb.new(test_name, genre, index, 'step+')))
     markup.add(
         types.InlineKeyboardButton('Показать результат',
-                                   callback_data=result_cb.new(table_name=table_name, action='result',
-                                                               number_of_questions=number_of_questions)))
+                                   callback_data=result_cb.new(test_name, genre, message_id, 'result')))
     await query.message.edit_text(text=text, reply_markup=markup)
 
 
 @dp.callback_query_handler(answer_cb.filter(action=['answer']))
 async def testing_users(query: types.CallbackQuery, callback_data: dict):
-    SQLighter(STORAGE_NAME).insert_row(callback_data['post_id'], callback_data['right_or_wrong'],
-                                       callback_data['question_number'])
+    message_id = callback_data['message_id']
+    index = int(callback_data['index'])
+    right_or_wrong = int(callback_data['right_or_wrong'])
+    if message_id not in globals():
+        globals()[message_id] = dict()
+        globals()[message_id][index] = right_or_wrong
+    else:
+        globals()[message_id][index] = right_or_wrong
     await query.answer(text=f'Вы выбрали ответ {callback_data["answer"]}')
 
 
 @dp.callback_query_handler(result_cb.filter(action=['result']))
 async def result_test(query: types.CallbackQuery, callback_data: dict):
-    db_work = SQLighter(STORAGE_NAME)
-    post_id = query.message.message_id
-    num_of_right_answer = db_work.number_of_correct_answers(post_id)
-    all_wrong_answers_id = SQLighter(STORAGE_NAME).all_wrong_answers(post_id)
-    advice = SQLighter(DATABASE_NAME).select_advice(callback_data['table_name'], all_wrong_answers_id)
-    db_work.delete_rows(query.message.message_id)
-    number_of_questions = callback_data["number_of_questions"]
-    if str(advice) == '()':
+    genre = callback_data['genre']
+    test_name = callback_data['test_name']
+    test_data = sql_data[genre][test_name]
+    message_id = callback_data['message_id']
+    num_of_right_answer = 0
+    number_of_questions = test_data[-1]['id']
+    advice = []
+
+    if message_id not in globals():
+        await query.message.edit_text(text='де відповіді?', disable_web_page_preview=True)
+
+    for index, data in globals()[message_id].items():
+        num_of_right_answer += data
+        if not data:
+            advice.append(test_data[index]['advice'])
+
+    del globals()[message_id]
+
+    if not advice:
         text = md.text(
             md.hbold(f'Поздравляю вы прошли тест! Правильных ответов: {num_of_right_answer} из {number_of_questions}'),
             '',
@@ -172,5 +174,4 @@ async def message_reply(message: Message):
 
 
 if __name__ == '__main__':
-    SQLighter(STORAGE_NAME).delete_all_rows("all_answers")
     executor.start_polling(dp)
